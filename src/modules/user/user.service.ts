@@ -2,8 +2,7 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import User from './user.model';
 import ApiError from '../errors/ApiError';
-import { IOptions, QueryResult } from '../paginate/paginate';
-import { NewCreatedUser, UpdateUserBody, IUserDoc, NewRegisteredUser } from './user.interfaces';
+import { NewCreatedUser, UpdateUserBody, IUserDoc, NewRegisteredUser, ISellerProfile } from './user.interfaces';
 
 /**
  * Create a user
@@ -27,17 +26,6 @@ export const registerUser = async (userBody: NewRegisteredUser): Promise<IUserDo
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
   }
   return User.create(userBody);
-};
-
-/**
- * Query for users
- * @param {Object} filter - Mongo filter
- * @param {Object} options - Query options
- * @returns {Promise<QueryResult>}
- */
-export const queryUsers = async (filter: Record<string, any>, options: IOptions): Promise<QueryResult> => {
-  const users = await User.paginate(filter, options);
-  return users;
 };
 
 /**
@@ -68,10 +56,20 @@ export const updateUserById = async (
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
-  if (updateBody.email && (await User.isEmailTaken(updateBody.email, userId))) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
-  }
   Object.assign(user, updateBody);
+  await user.save();
+  return user;
+};
+
+export const becomeASeller = async (
+  userId: mongoose.Types.ObjectId,
+  sellerProfile: Partial<ISellerProfile>
+): Promise<IUserDoc | null> => {
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  Object.assign(user, { sellerProfile: { ...sellerProfile, approved: true } });
   await user.save();
   return user;
 };

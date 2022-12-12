@@ -3,8 +3,32 @@ import validator from 'validator';
 import bcrypt from 'bcryptjs';
 import toJSON from '../toJSON/toJSON';
 import paginate from '../paginate/paginate';
-import { roles } from '../../config/roles';
-import { IUserDoc, IUserModel } from './user.interfaces';
+import { ISellerProfile, IUserDoc, IUserModel, Roles } from './user.interfaces';
+
+const SellerProfile = new mongoose.Schema<ISellerProfile, mongoose.Document>(
+  {
+    businessName: {
+      type: String,
+      required: true
+    },
+    businessEmail: {
+      type: String,
+      required: true
+    },
+    identityFileUrl: {
+      type: String,
+      required: true
+    },
+    approved: {
+      type: Boolean,
+      default: false
+    }
+  },
+  {
+    _id: false,
+    timestamps: true
+  }
+)
 
 const userSchema = new mongoose.Schema<IUserDoc, IUserModel>(
   {
@@ -38,14 +62,17 @@ const userSchema = new mongoose.Schema<IUserDoc, IUserModel>(
       private: true, // used by the toJSON plugin
     },
     role: {
-      type: String,
-      enum: roles,
-      default: 'user',
+      type: [String],
+      enum: Object.values(Roles),
+      default: [Roles.BUYER],
     },
     isEmailVerified: {
       type: Boolean,
       default: false,
     },
+    sellerProfile: {
+      type: SellerProfile
+    }
   },
   {
     timestamps: true,
